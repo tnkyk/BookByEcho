@@ -62,7 +62,7 @@ func (uh *userHandler) Index(ctx echo.Context) (err error) {
 		http.Error(ctx.Response(), "Internal Server Error", 500)
 		return
 	}
-
+	return
 }
 
 func (uh *userHandler) SignUp(ctx echo.Context) (err error) {
@@ -97,6 +97,7 @@ func (uh *userHandler) SignUp(ctx echo.Context) (err error) {
 	ctx.Response().Write(ans)
 	ctx.Response().WriteHeader(http.StatusOK)
 	ctx.Response().Header().Set("Content-Type", "apprication/json")
+	return
 }
 
 // Create the JWT key used to create the signature
@@ -119,7 +120,7 @@ type Claims struct {
 func (uh *userHandler) SignIn(ctx echo.Context) (err error) {
 	var creds Credentials
 	// Get the JSON body and decode into credentials
-	err := json.NewDecoder(ctx.Request().Body).Decode(&creds)
+	err = json.NewDecoder(ctx.Request().Body).Decode(&creds)
 	if err != nil {
 		// If the structure of the body is wrong, return an HTTP error
 		ctx.Response().WriteHeader(http.StatusBadRequest)
@@ -161,11 +162,12 @@ func (uh *userHandler) SignIn(ctx echo.Context) (err error) {
 	}
 	// Finally, we set the client cookie for "token" as the JWT we just generated
 	// we also set an expiry time which is the same as the token itself
-	http.SetCookie(ctx.Response(), &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: expirationTime,
-	})
+	cookie := new(http.Cookie)
+	cookie.Name = "username"
+	cookie.Value = tokenString
+	cookie.Expires = time.Now().Add(24 * time.Hour)
+	ctx.SetCookie(cookie)
+	return
 }
 
 func (uh *userHandler) UpdateUser(ctx echo.Context) (err error) {
@@ -185,12 +187,12 @@ func (uh *userHandler) UpdateUser(ctx echo.Context) (err error) {
 		ctx.Response().Status = 500
 		return
 	}
-
+	return
 }
 
 func (uh *userHandler) DeleteUser(ctx echo.Context) (err error) {
 	name := ctx.Request().FormValue("name")
-	err := uh.userUsecase.DeleteUser(ctx, name)
+	err = uh.userUsecase.DeleteUser(ctx, name)
 	if err != nil {
 		log.Println(err)
 		return
@@ -198,4 +200,5 @@ func (uh *userHandler) DeleteUser(ctx echo.Context) (err error) {
 	ctx.Response().Write([]byte("Delete user" + name))
 	ctx.Response().WriteHeader(http.StatusOK)
 	ctx.Response().Header().Set("Content-Type", "apprication/json")
+	return
 }
